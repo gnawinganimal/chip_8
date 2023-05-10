@@ -23,6 +23,7 @@ impl Cpu {
 
         // match most significant nibble
         match op.get_u4(3) {
+            
             // JP   addr
             0x1 => {
                 
@@ -58,6 +59,7 @@ impl Cpu {
 
             },
 
+            // match least significant nibble
             0x8 => match op.get_u4(0) {
                 // LD   Vx, Vy
                 0x0 => {
@@ -132,6 +134,7 @@ impl Cpu {
 
             },
 
+            // match least significant byte
             0xE => match op.get_u8(0) {
                 // SKP  Vx
                 0x9E => {
@@ -146,6 +149,7 @@ impl Cpu {
                 _ => (),
             },
 
+            // match least significant byte
             0xF => match op.get_u8(0) {
                 // LD   Vx, DT
                 0x07 => {
