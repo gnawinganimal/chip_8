@@ -2,7 +2,18 @@ use crate::opcode::Op;
 
 
 pub struct Cpu {
+    i:  u16,
+    pc: u16,
+    m:  [u8; 0x1000],
+    v:  [u8; 0x10],
+    
+    keypad:  (), // TODO
+    display: (), // TODO
 
+    stack: [u16; 0x10],
+    sp:    u8,
+
+    dt: u8,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -14,7 +25,18 @@ pub enum Error {
 impl Cpu {
     pub fn new() -> Self {
         Cpu {
+            i:  0,
+            pc: 0,
+            m:  [0; 0x1000],
+            v:  [0; 0x10],
 
+            keypad:  (),
+            display: (),
+
+            stack: [0; 0x10],
+            sp:    0,
+
+            dt: 0,
         }
     }
 
