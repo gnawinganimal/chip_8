@@ -45,6 +45,20 @@ impl Cpu {
 
         // match most significant nibble
         match op.get_u4(3) {
+            // match least significant byte
+            0x0 => match op.get_u8(0) {
+                // CLS
+                0xE0 => {
+
+                },
+
+                // RET
+                0xEE => {
+
+                },
+
+                _ => (),
+            }
             
             // JP   addr
             0x1 => {
