@@ -1,3 +1,4 @@
+use rand::prelude::*;
 use crate::opcode::Op;
 
 
@@ -14,6 +15,7 @@ pub struct Cpu {
     sp:    u8,
 
     dt: u8,
+    st: u8,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -37,23 +39,24 @@ impl Cpu {
             sp:    0,
 
             dt: 0,
+            st: 0,
         }
     }
 
-    pub fn get_vx(&self, op: Op) -> u8 {
-        self.v[op.get_u4(2) as usize]
+    pub fn vx(&self, op: Op) -> &u8 {
+        &self.v[op.get_u4(2) as usize]
     }
 
-    pub fn get_vy(&self, op: Op) -> u8 {
-        self.v[op.get_u4(1) as usize]
+    pub fn vy(&self, op: Op) -> &u8 {
+        &self.v[op.get_u4(1) as usize]
     }
 
-    pub fn set_vx(&mut self, op: Op, n: u8) {
-        self.v[op.get_u4(2) as usize] = n;
+    pub fn vx_mut(&mut self, op: Op) -> &mut u8 {
+        &mut self.v[op.get_u4(1) as usize]
     }
 
-    pub fn set_vy(&mut self, op: Op, n: u8) {
-        self.v[op.get_u4(1) as usize] = n;
+    pub fn vy_mut(&mut self, op: Op) -> &mut u8 {
+        &mut self.v[op.get_u4(1) as usize]
     }
 
     pub fn step(&mut self, op: Op) -> Result<()> {
@@ -89,80 +92,112 @@ impl Cpu {
 
             // SE   Vx, byte
             0x3 => {
-                if self.get_vx(op) == op.get_u8(0) {
+                if *self.vx(op) == op.get_u8(0) {
                     self.pc += 2;
                 }
             },            
 
             // SNE  Vx, byte
             0x4 => {
-                if self.get_vx(op) != op.get_u8(0) {
+                if *self.vx(op) != op.get_u8(0) {
                     self.pc += 2;
                 }
             },
 
             // SE   Vx, Vy
             0x5 => {
-                if self.get_vx(op) == self.get_vy(op) {
+                if self.vx(op) == self.vy(op) {
                     self.pc += 2;
                 }
             },
 
             // LD   Vx, byte
             0x6 => {
-                self.set_vx(op, op.get_u8(0));
+                *self.vx_mut(op) = op.get_u8(0);
             },
 
             // ADD  Vx, byte
             0x7 => {
-                self.v[op.get_u4(2) as usize] += op.get_u8(0);
+                *self.vx_mut(op) += op.get_u8(0);
             },
 
             // match least significant nibble
             0x8 => match op.get_u4(0) {
                 // LD   Vx, Vy
                 0x0 => {
-                    self.v[op.get_u4(2) as usize] = self.v[op.get_u4(1) as usize];
+                    *self.vx_mut(op) = *self.vy(op);
                 },
 
                 // OR   Vx, Vy
                 0x1 => {
-                    self.v[op.get_u4(2) as usize] = self.v[op.get_u4(1) as usize];
+                    *self.vx_mut(op) = self.vx(op) | self.vy(op);
                 },
 
                 // AND  Vx, Vy
                 0x2 => {
-
+                    *self.vx_mut(op) = self.vx(op) & self.vy(op);
                 },
 
                 // XOR  Vx, Vy
                 0x3 => {
-                    
+                    *self.vx_mut(op) = self.vx(op) ^ self.vy(op);
                 },
 
                 // ADD  Vx, Vy
                 0x4 => {
-                    
+                    let result = *self.vx(op) as u16 + *self.vy(op) as u16;
+
+                    if result > 255 {
+                        self.v[0xF] = 1;
+                    } else {
+                        self.v[0xF] = 0;
+                    }
+
+                    *self.vx_mut(op) = result as u8;
                 },
 
                 // SUB  Vx, Vy
                 0x5 => {
+                    if self.vx(op) > self.vy(op) {
+                        self.v[0xF] = 1;
+                    } else {
+                        self.v[0xF] = 0;
+                    }
                     
+                    *self.vx_mut(op) = self.vx(op) - self.vy(op);
                 },
 
                 // SHR  Vx, {, Vy}
                 0x6 => {
-                    
+                    if self.vx(op) & 1 == 1 {
+                        self.v[0xF] = 1;
+                    } else {
+                        self.v[0xF] = 0;
+                    }
+
+                    *self.vx_mut(op) /= 2;
                 },
 
                 // SUBN Vx, Vy
                 0x7 => {
+                    if self.vx(op) > self.vy(op) {
+                        self.v[0xF] = 1;
+                    } else {
+                        self.v[0xF] = 0;
+                    }
                     
+                    *self.vx_mut(op) = *self.vx(op) - *self.vy(op);
                 },
 
                 // SHL  Vx {, Vy}
                 0xE => {
-                    
+                    if self.vx(op) & 0b1000_0000 == 0b1000_0000 {
+                        self.v[0xF] = 1;
+                    } else {
+                        self.v[0xF] = 0;
+                    }
+
+                    *self.vx_mut(op) *= 2;
                 },
 
                 _ => (),
@@ -170,27 +205,29 @@ impl Cpu {
 
             // SNE  Vx, Vy,
             0x9 => {
-
+                if self.vx(op) != self.vy(op) {
+                    self.pc += 2;
+                }
             },
 
             // LD   I, addr
             0xA => {
-
+                self.i = op.get_u12(0);
             },
 
             // JP   V0, addr
             0xB => {
-
+                self.pc = op.get_u12(0) + self.v[0] as u16;
             },
 
             // RND  Vx, byte
             0xC => {
-
+                *self.vx_mut(op) = random::<u8>() & op.get_u8(0);
             },
 
             // DRW  Vx, Vy, nibble
             0xD => {
-
+                
             },
 
             // match least significant byte
@@ -212,32 +249,32 @@ impl Cpu {
             0xF => match op.get_u8(0) {
                 // LD   Vx, DT
                 0x07 => {
-
+                    *self.vx_mut(op) = self.dt;
                 },
 
                 // LD   Vx, K
                 0x0A => {
-
+                    
                 },
 
                 // LD   DT, Vx
                 0x15 => {
-
+                    self.dt = *self.vx(op);
                 }
 
                 // LD   ST, Vx
                 0x18 => {
-
+                    self.st = *self.vx(op);
                 },
 
                 // ADD  I,  Vx
                 0x1E => {
-
+                    self.i = self.i + *self.vx(op) as u16;
                 },
 
                 // LD   F,  Vx
                 0x29 => {
-
+                    
                 },
 
                 // LD   B,  Vx
