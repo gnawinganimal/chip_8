@@ -52,7 +52,7 @@ impl Cpu {
     }
 
     pub fn vx_mut(&mut self, op: Op) -> &mut u8 {
-        &mut self.v[op.get_u4(1) as usize]
+        &mut self.v[op.get_u4(2) as usize]
     }
 
     pub fn vy_mut(&mut self, op: Op) -> &mut u8 {
@@ -234,7 +234,7 @@ impl Cpu {
             0xE => match op.get_u8(0) {
                 // SKP  Vx
                 0x9E => {
-
+                    
                 },
             
                 // SKNP Vx
