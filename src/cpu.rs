@@ -40,9 +40,23 @@ impl Cpu {
         }
     }
 
-    pub fn step(&mut self, opcode: u16) -> Result<()> {
-        let op = Op::from(opcode);
+    pub fn get_vx(&self, op: Op) -> u8 {
+        self.v[op.get_u4(2) as usize]
+    }
 
+    pub fn get_vy(&self, op: Op) -> u8 {
+        self.v[op.get_u4(1) as usize]
+    }
+
+    pub fn set_vx(&mut self, op: Op, n: u8) {
+        self.v[op.get_u4(2) as usize] = n;
+    }
+
+    pub fn set_vy(&mut self, op: Op, n: u8) {
+        self.v[op.get_u4(1) as usize] = n;
+    }
+
+    pub fn step(&mut self, op: Op) -> Result<()> {
         // match most significant nibble
         match op.get_u4(3) {
             // match least significant byte
@@ -62,49 +76,58 @@ impl Cpu {
             
             // JP   addr
             0x1 => {
-                
+                self.pc = op.get_u12(0);
             },
 
             // CALL addr
             0x2 => {
+                self.stack[self.sp as usize] = self.pc;
+                self.sp += 1;
 
+                self.pc = op.get_u12(0);
             },
 
             // SE   Vx, byte
             0x3 => {
-
+                if self.get_vx(op) == op.get_u8(0) {
+                    self.pc += 2;
+                }
             },            
 
             // SNE  Vx, byte
             0x4 => {
-
+                if self.get_vx(op) != op.get_u8(0) {
+                    self.pc += 2;
+                }
             },
 
             // SE   Vx, Vy
             0x5 => {
-
+                if self.get_vx(op) == self.get_vy(op) {
+                    self.pc += 2;
+                }
             },
 
             // LD   Vx, byte
             0x6 => {
-
+                self.set_vx(op, op.get_u8(0));
             },
 
             // ADD  Vx, byte
             0x7 => {
-
+                self.v[op.get_u4(2) as usize] += op.get_u8(0);
             },
 
             // match least significant nibble
             0x8 => match op.get_u4(0) {
                 // LD   Vx, Vy
                 0x0 => {
-
+                    self.v[op.get_u4(2) as usize] = self.v[op.get_u4(1) as usize];
                 },
 
                 // OR   Vx, Vy
                 0x1 => {
-
+                    self.v[op.get_u4(2) as usize] = self.v[op.get_u4(1) as usize];
                 },
 
                 // AND  Vx, Vy
@@ -241,7 +264,7 @@ impl Cpu {
         Ok(())
     }
 
-    pub fn exec(&mut self) -> Result<()> {        
+    pub fn exec(&mut self) -> Result<()> { 
         Ok(())
     }
 }
