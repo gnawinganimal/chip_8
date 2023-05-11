@@ -279,17 +279,21 @@ impl Cpu {
 
                 // LD   B,  Vx
                 0x33 => {
-
+                    
                 },
 
                 // LD   [I], Vx
                 0x55 => {
-
+                    for x in 0..op.get_u4(2) {
+                        self.m[(self.i + x as u16) as usize] = self.v[x as usize];
+                    }
                 },
 
                 // LD   Vx, [I]
                 0x65 => {
-
+                    for x in 0..op.get_u4(2) {
+                        self.v[x as usize] = self.m[(self.i + x as u16) as usize];
+                    }
                 },
 
                 _ => (),
